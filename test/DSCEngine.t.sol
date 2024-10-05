@@ -7,15 +7,20 @@ import {DecentralizedStablecoin} from "../src/DecentralizedStablecoin.sol";
 import {DSCEngineScript} from "../script/DSCEngine.s.sol";
 import {HelperConfig} from "../script/HelperConfig.s.sol";
 
-contract DSCEngineTest is Test, HelperConfig {
+contract DSCEngineTest is Test {
     DSCEngine public dscEngine;
     DecentralizedStablecoin public decentralizedStablecoin;
+    HelperConfig.NetworkConfig public activeNetworkConfig;
 
     function setUp() public {
-        (decentralizedStablecoin, dscEngine) = new DSCEngineScript().run();
+        (decentralizedStablecoin, dscEngine, activeNetworkConfig) = new DSCEngineScript().run();
     }
 
-    function test() public view {
-        console.log(activeNetworkConfig.wethUSDPriceFeed);
+    function testGetUsdValue() public view {
+        uint256 ethAmount = 15e18;
+        uint256 expectedUsd = 30000e18;
+        uint256 actualUsd = dscEngine.getUSDValue(activeNetworkConfig.weth, ethAmount);
+
+        assertEq(expectedUsd, actualUsd);
     }
 }

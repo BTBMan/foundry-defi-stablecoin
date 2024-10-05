@@ -10,7 +10,14 @@ contract DSCEngineScript is Script, HelperConfig {
     address[] public tokenAddresses;
     address[] public priceFeedAddresses;
 
-    function run() external returns (DecentralizedStablecoin decentralizedStablecoin, DSCEngine dscEngine) {
+    function run()
+        external
+        returns (
+            DecentralizedStablecoin decentralizedStablecoin,
+            DSCEngine dscEngine,
+            HelperConfig.NetworkConfig memory
+        )
+    {
         tokenAddresses = [activeNetworkConfig.weth, activeNetworkConfig.wbtc];
         priceFeedAddresses = [activeNetworkConfig.wethUSDPriceFeed, activeNetworkConfig.wbtcUSDPriceFeed];
 
@@ -20,5 +27,7 @@ contract DSCEngineScript is Script, HelperConfig {
 
         decentralizedStablecoin.transferOwnership(address(dscEngine));
         vm.stopBroadcast();
+
+        return (decentralizedStablecoin, dscEngine, activeNetworkConfig);
     }
 }
