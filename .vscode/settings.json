@@ -3,6 +3,7 @@
     "editor.defaultFormatter": "NomicFoundation.hardhat-solidity"
   },
   "solidity.formatter": "forge",
+  "editor.tabSize": 4,
   "eslint.enable": false,
   "prettier.enable": false
 }

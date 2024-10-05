@@ -6,19 +6,15 @@ import {DecentralizedStablecoin} from "../src/DecentralizedStablecoin.sol";
 import {DSCEngine} from "../src/DSCEngine.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 
-contract DSCEngineScript is Script {
+contract DSCEngineScript is Script, HelperConfig {
     address[] public tokenAddresses;
     address[] public priceFeedAddresses;
 
     function run() external returns (DecentralizedStablecoin decentralizedStablecoin, DSCEngine dscEngine) {
-        HelperConfig helperConfig = new HelperConfig();
-        (address wethUSDPriceFeed, address wbtcUSDPriceFeed, address weth, address wbtc, uint256 deployerKey) =
-            helperConfig.activeNetworkConfig();
+        tokenAddresses = [activeNetworkConfig.weth, activeNetworkConfig.wbtc];
+        priceFeedAddresses = [activeNetworkConfig.wethUSDPriceFeed, activeNetworkConfig.wbtcUSDPriceFeed];
 
-        tokenAddresses = [weth, wbtc];
-        priceFeedAddresses = [wethUSDPriceFeed, wbtcUSDPriceFeed];
-
-        vm.startBroadcast(deployerKey);
+        vm.startBroadcast(activeNetworkConfig.deployerKey);
         decentralizedStablecoin = new DecentralizedStablecoin();
         dscEngine = new DSCEngine(tokenAddresses, priceFeedAddresses, address(decentralizedStablecoin));
 
