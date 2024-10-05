@@ -25,6 +25,8 @@ import {DecentralizedStablecoin} from "./DecentralizedStablecoin.sol";
 contract DSCEngine is ReentrancyGuard {
     mapping(address token => address priceFeed) private s_priceFeeds;
     mapping(address user => mapping(address token => uint256 amount)) private s_collateralDeposited;
+    mapping(address user => uint256 amountDSCMinted) private s_DSCMinted;
+    address[] private s_collateralTokens;
     DecentralizedStablecoin private immutable i_dsc;
 
     event CollateralDeposited(address indexed user, address indexed token, uint256 indexed amount);
@@ -54,6 +56,7 @@ contract DSCEngine is ReentrancyGuard {
         }
         for (uint256 i = 0; i < tokenAddresses.length; i++) {
             s_priceFeeds[tokenAddresses[i]] = priceFeedAddresses[i];
+            s_collateralTokens.push(tokenAddresses[i]);
         }
         i_dsc = DecentralizedStablecoin(dscAddress);
     }
@@ -79,11 +82,45 @@ contract DSCEngine is ReentrancyGuard {
 
     function redeemCollateral() external {}
 
-    function mintDSC() external {}
+    function mintDSC(uint256 amountDSCToMint) external moreThanZero(amountDSCToMint) nonReentrant {
+        s_DSCMinted[msg.sender] += amountDSCToMint;
+
+        // if they minted too much, revert. ($100 collateral -> $150 DSC)
+        _revertIfHealthFactorIsBroken(msg.sender);
+    }
 
     function burnDSC() external {}
 
     function liquidate() external {}
 
     function getHealthFactor() external view {}
+
+    function getAccountCollateralValue(address user) public view returns (uint256) {
+        for (uint256 i = 0; i < s_collateralTokens.length; i++) {
+            address token = s_collateralTokens[i];
+            uint256 amount = s_collateralDeposited[user][token];
+            // totalCollateralValueInUSD += getUSDValue(token, amount);
+        }
+    }
+
+    function getUSDValue(address token, uint256 amount) public view returns (uint256) {
+        //
+    }
+
+    function _revertIfHealthFactorIsBroken(address user) internal view {
+        //
+    }
+
+    function _healthFactor(address user) private view returns (uint256) {
+        //
+    }
+
+    function _getAccountInformation(address user)
+        private
+        view
+        returns (uint256 totalDSCMinted, uint256 collateralValueInUSD)
+    {
+        totalDSCMinted = s_DSCMinted[user];
+        collateralValueInUSD = getAccountCollateralValue(user);
+    }
 }
