@@ -35,10 +35,11 @@ contract DSCEngine is ReentrancyGuard {
     mapping(address user => mapping(address token => uint256 amount)) private s_collateralDeposited;
     mapping(address user => uint256 amountDSCMinted) private s_DSCMinted;
     address[] private s_collateralTokens;
+
     DecentralizedStablecoin private immutable i_dsc;
 
     event CollateralDeposited(address indexed user, address indexed token, uint256 indexed amount);
-    event CollateralRedeemed(address indexed user, address indexed token, uint256 indexed amount);
+    event CollateralRedeemed(address indexed from, address indexed to, address indexed token, uint256 amount);
 
     error DSCEngine__needsMoreThanZero();
     error DSCEngine__TokenAddressesAndPriceFeedAddressesMustBeSameLength();
@@ -47,6 +48,7 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__BreaksHealthFactor(uint256 healthFactor);
     error DSCEngine__MintedFailed();
     error DSCEngine__HealthFactorOk();
+    error DSCEngine__HealthFactorNotImproved();
 
     modifier moreThanZero(uint256 amount) {
         if (amount <= 0) {
@@ -112,14 +114,7 @@ contract DSCEngine is ReentrancyGuard {
         moreThanZero(amountCollateral)
         nonReentrant
     {
-        s_collateralDeposited[msg.sender][tokenCollateralAddress] -= amountCollateral;
-        emit CollateralRedeemed(msg.sender, tokenCollateralAddress, amountCollateral);
-
-        bool success = IERC20(tokenCollateralAddress).transfer(msg.sender, amountCollateral);
-        if (!success) {
-            revert DSCEngine__TransferFailed();
-        }
-
+        _redeemCollateral(msg.sender, msg.sender, tokenCollateralAddress, amountCollateral);
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
@@ -136,14 +131,7 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     function burnDSC(uint256 amountDSCToBurn) external moreThanZero(amountDSCToBurn) nonReentrant {
-        s_DSCMinted[msg.sender] -= amountDSCToBurn;
-
-        bool success = i_dsc.transferFrom(msg.sender, address(this), amountDSCToBurn);
-        if (!success) {
-            revert DSCEngine__TransferFailed();
-        }
-
-        i_dsc.burn(amountDSCToBurn);
+        _burnDSC(msg.sender, msg.sender, amountDSCToBurn);
 
         _revertIfHealthFactorIsBroken(msg.sender);
     }
@@ -167,6 +155,18 @@ contract DSCEngine is ReentrancyGuard {
         // And give liquidator 10% bonus, ep: $110 of WETH for 100 DSC
         uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_BONUS) / LIQUIDATION_PRECISION;
         uint256 totalCollateral = tokenAmountFromDebtCovered + bonusCollateral;
+
+        _redeemCollateral(user, msg.sender, collateral, totalCollateral);
+        // We need to burn DSC
+        _burnDSC(user, msg.sender, debtToCover);
+
+        // Check health factor after liquidated
+        uint256 endingUserHealthFactor = _healthFactor(user);
+        if (endingUserHealthFactor <= startingUserHealthFactor) {
+            revert DSCEngine__HealthFactorNotImproved();
+        }
+
+        _revertIfHealthFactorIsBroken(msg.sender);
     }
 
     function getHealthFactor() external view {}
@@ -217,5 +217,28 @@ contract DSCEngine is ReentrancyGuard {
     {
         totalDSCMinted = s_DSCMinted[user];
         collateralValueInUSD = getAccountCollateralValue(user);
+    }
+
+    function _redeemCollateral(address from, address to, address tokenCollateralAddress, uint256 amountCollateral)
+        private
+    {
+        s_collateralDeposited[from][tokenCollateralAddress] -= amountCollateral;
+        emit CollateralRedeemed(from, to, tokenCollateralAddress, amountCollateral);
+
+        bool success = IERC20(tokenCollateralAddress).transfer(to, amountCollateral);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+    }
+
+    function _burnDSC(address onBehalfOf, address dscFrom, uint256 amountDSCToBurn) private {
+        s_DSCMinted[onBehalfOf] -= amountDSCToBurn;
+
+        bool success = i_dsc.transferFrom(dscFrom, address(this), amountDSCToBurn);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+
+        i_dsc.burn(amountDSCToBurn);
     }
 }
