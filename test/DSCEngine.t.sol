@@ -10,6 +10,7 @@ import {HelperConfig} from "../script/HelperConfig.s.sol";
 
 contract DSCEngineTest is Test {
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
+    uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
     DSCEngine public dscEngine;
     DecentralizedStablecoin public decentralizedStablecoin;
     HelperConfig.NetworkConfig public activeNetworkConfig;
@@ -18,6 +19,7 @@ contract DSCEngineTest is Test {
 
     function setUp() public {
         (decentralizedStablecoin, dscEngine, activeNetworkConfig) = new DSCEngineScript().run();
+        ERC20Mock(activeNetworkConfig.weth).mint(user, STARTING_ERC20_BALANCE);
     }
 
     function testGetUsdValue() public view {

@@ -70,7 +70,14 @@ contract DSCEngine is ReentrancyGuard {
         i_dsc = DecentralizedStablecoin(dscAddress);
     }
 
-    function depositCollateralAndMintDSC() external {}
+    function depositCollateralAndMintDSC(
+        address tokenCollateralAddress,
+        uint256 amountCollateral,
+        uint256 amountDSCToMint
+    ) external {
+        this.depositCollateral(tokenCollateralAddress, amountCollateral);
+        this.mintDSC(amountDSCToMint);
+    }
 
     function depositCollateral(address tokenCollateralAddress, uint256 amountCollateral)
         external
