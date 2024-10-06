@@ -23,6 +23,15 @@ contract DSCEngineTest is Test {
 
     address public user = makeAddr("user");
 
+    modifier depositedCollateral() {
+        vm.startPrank(user);
+        ERC20Mock(activeNetworkConfig.weth).approve(address(dscEngine), AMOUNT_COLLATERAL);
+
+        dscEngine.depositCollateral(activeNetworkConfig.weth, AMOUNT_COLLATERAL);
+        vm.stopPrank();
+        _;
+    }
+
     function setUp() public {
         dscEngineScript = new DSCEngineScript();
         (decentralizedStablecoin, dscEngine, activeNetworkConfig) = dscEngineScript.run();
@@ -46,12 +55,35 @@ contract DSCEngineTest is Test {
         assertEq(expectedUsd, actualUsd);
     }
 
+    function testGetTokenAmountFromUSD() public view {
+        uint256 usdAmount = 2000 ether;
+        uint256 expectedAmount = 1 ether;
+        uint256 actualAmount = dscEngine.getTokenAmountFromUSD(activeNetworkConfig.weth, usdAmount);
+
+        assertEq(expectedAmount, actualAmount);
+    }
+
     function testRevertIfCollateralZero() public {
         vm.startPrank(user);
-        ERC20Mock(activeNetworkConfig.weth).approve(address(dscEngine), AMOUNT_COLLATERAL);
-
         vm.expectRevert(DSCEngine.DSCEngine__needsMoreThanZero.selector);
         dscEngine.depositCollateral(activeNetworkConfig.weth, 0);
         vm.stopPrank();
+    }
+
+    function testRevertWithUnapprovedCollateral() public {
+        ERC20Mock ranToken = new ERC20Mock();
+
+        vm.startPrank(user);
+        vm.expectRevert(DSCEngine.DSCEngine__NotAllowedToken.selector);
+        dscEngine.depositCollateral(address(ranToken), AMOUNT_COLLATERAL);
+        vm.stopPrank();
+    }
+
+    function testCanDepositCollateralAndGetAccountInfo() public depositedCollateral {
+        (uint256 totalDSCMinted, uint256 collateralValueInUSD) = dscEngine.getAccountInformation(user);
+        uint256 expectCollateralAmount = dscEngine.getTokenAmountFromUSD(activeNetworkConfig.weth, collateralValueInUSD);
+
+        assertEq(totalDSCMinted, 0);
+        assertEq(AMOUNT_COLLATERAL, expectCollateralAmount);
     }
 }

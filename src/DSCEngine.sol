@@ -192,6 +192,14 @@ contract DSCEngine is ReentrancyGuard {
         return (usdAmountInWei * PRECISION) / oneTokenPriceInUSD;
     }
 
+    function getAccountInformation(address user)
+        public
+        view
+        returns (uint256 totalDSCMinted, uint256 collateralValueInUSD)
+    {
+        return _getAccountInformation(user);
+    }
+
     // 1. Check health factor (do they have enough collateral?)
     // 2. Revert if they don't
     function _revertIfHealthFactorIsBroken(address user) internal view {
