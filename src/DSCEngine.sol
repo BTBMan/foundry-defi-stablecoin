@@ -112,12 +112,12 @@ contract DSCEngine is ReentrancyGuard {
         uint256 amountCollateral,
         uint256 amountDSCToMint
     ) external {
-        this.depositCollateral(tokenCollateralAddress, amountCollateral);
-        this.mintDSC(amountDSCToMint);
+        depositCollateral(tokenCollateralAddress, amountCollateral);
+        mintDSC(amountDSCToMint);
     }
 
     function depositCollateral(address tokenCollateralAddress, uint256 amountCollateral)
-        external
+        public
         moreThanZero(amountCollateral)
         isAllowedToken(tokenCollateralAddress)
         nonReentrant
@@ -132,7 +132,7 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function mintDSC(uint256 amountDSCToMint) external moreThanZero(amountDSCToMint) nonReentrant {
+    function mintDSC(uint256 amountDSCToMint) public moreThanZero(amountDSCToMint) nonReentrant {
         s_DSCMinted[msg.sender] += amountDSCToMint;
 
         // if they minted too much, revert. ($100 collateral -> $150 DSC)
@@ -304,6 +304,14 @@ contract DSCEngine is ReentrancyGuard {
         returns (uint256)
     {
         return _calculateHealthFactor(totalDSCMinted, collateralValueInUSD);
+    }
+
+    function getCollateralDeposited(address user, address token) external view returns (uint256) {
+        return s_collateralDeposited[user][token];
+    }
+
+    function getDSCMinted(address user) external view returns (uint256) {
+        return s_DSCMinted[user];
     }
 
     function getLiquidationThreshold() external pure returns (uint256) {

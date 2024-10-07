@@ -13,6 +13,7 @@ contract DSCEngineTest is Test, IHelperConfig {
 
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
     uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
+    uint256 public constant AMOUNT_DSC_TO_MINT = 5 ether;
 
     address[] public tokenAddresses;
     address[] public priceFeedAddresses;
@@ -23,6 +24,8 @@ contract DSCEngineTest is Test, IHelperConfig {
     DSCEngineScript public dscEngineScript;
 
     address public user = makeAddr("user");
+
+    event CollateralDeposited(address indexed user, address indexed token, uint256 indexed amount);
 
     modifier depositedCollateral() {
         vm.startPrank(user);
@@ -91,15 +94,26 @@ contract DSCEngineTest is Test, IHelperConfig {
         assertEq(AMOUNT_COLLATERAL, expectCollateralAmount);
     }
 
+    function testEmitEventWhenDepositCollateral() public {
+        vm.startPrank(user);
+        ERC20Mock(activeNetworkConfig.weth).approve(address(dscEngine), AMOUNT_COLLATERAL);
+
+        vm.expectEmit(true, true, true, false, address(dscEngine));
+        emit CollateralDeposited(user, activeNetworkConfig.weth, AMOUNT_COLLATERAL);
+
+        dscEngine.depositCollateral(activeNetworkConfig.weth, AMOUNT_COLLATERAL);
+        vm.stopPrank();
+    }
+
     function testCalculateHealthFactor() public view {
-        uint256 amountDSC = 2000 ether;
+        uint256 dscAmount = 2000 ether;
         uint256 health = 1 ether;
         // $x * 50 / 100 = $2000 DSC
         // $x = $2000 DSC / 50 * 100
         uint256 collateralValueInUSD =
-            amountDSC / dscEngine.getLiquidationThreshold() * dscEngine.getLiquidationPrecision();
-        uint256 goodHealth = dscEngine.getCalculateHealthFactor(amountDSC, collateralValueInUSD);
-        uint256 badHealth = dscEngine.getCalculateHealthFactor(amountDSC, collateralValueInUSD - 1);
+            dscAmount / dscEngine.getLiquidationThreshold() * dscEngine.getLiquidationPrecision();
+        uint256 goodHealth = dscEngine.getCalculateHealthFactor(dscAmount, collateralValueInUSD);
+        uint256 badHealth = dscEngine.getCalculateHealthFactor(dscAmount, collateralValueInUSD - 1);
 
         assertEq(goodHealth, health);
         assertLe(badHealth, health);
@@ -110,5 +124,25 @@ contract DSCEngineTest is Test, IHelperConfig {
         vm.expectRevert(DSCEngine.DSCEngine__needsMoreThanZero.selector);
         dscEngine.mintDSC(0);
         vm.stopPrank();
+    }
+
+    function testDSCEngineHasCollateralTokenBalanceAfterCollateral() public depositedCollateral {
+        uint256 dscEngineBalance = ERC20Mock(activeNetworkConfig.weth).balanceOf(address(dscEngine));
+
+        assertEq(dscEngineBalance, AMOUNT_COLLATERAL);
+    }
+
+    function testDepositCollateralAndMintDSC() public {
+        vm.startPrank(user);
+        ERC20Mock(activeNetworkConfig.weth).approve(address(dscEngine), AMOUNT_COLLATERAL);
+
+        dscEngine.depositCollateralAndMintDSC(activeNetworkConfig.weth, AMOUNT_COLLATERAL, AMOUNT_DSC_TO_MINT);
+        vm.stopPrank();
+
+        uint256 amountCollateralDeposited = dscEngine.getCollateralDeposited(user, activeNetworkConfig.weth);
+        uint256 amountDSCMinted = dscEngine.getDSCMinted(user);
+
+        assertEq(amountCollateralDeposited, AMOUNT_COLLATERAL);
+        assertEq(amountDSCMinted, AMOUNT_DSC_TO_MINT);
     }
 }
