@@ -6,10 +6,10 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {DSCEngine} from "../src/DSCEngine.sol";
 import {DecentralizedStablecoin} from "../src/DecentralizedStablecoin.sol";
 import {DSCEngineScript} from "../script/DSCEngine.s.sol";
-import {HelperConfig} from "../script/HelperConfig.s.sol";
+import {HelperConfig, IHelperConfig} from "../script/HelperConfig.s.sol";
 
-contract DSCEngineTest is Test {
-    HelperConfig.NetworkConfig public activeNetworkConfig;
+contract DSCEngineTest is Test, IHelperConfig {
+    NetworkConfig public activeNetworkConfig;
 
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
     uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
@@ -19,6 +19,7 @@ contract DSCEngineTest is Test {
 
     DSCEngine public dscEngine;
     DecentralizedStablecoin public decentralizedStablecoin;
+    HelperConfig public helperConfig;
     DSCEngineScript public dscEngineScript;
 
     address public user = makeAddr("user");
@@ -34,7 +35,10 @@ contract DSCEngineTest is Test {
 
     function setUp() public {
         dscEngineScript = new DSCEngineScript();
-        (decentralizedStablecoin, dscEngine, activeNetworkConfig) = dscEngineScript.run();
+        (decentralizedStablecoin, dscEngine, helperConfig) = dscEngineScript.run();
+
+        activeNetworkConfig = helperConfig.getActiveNetworkConfig();
+
         ERC20Mock(activeNetworkConfig.weth).mint(user, STARTING_ERC20_BALANCE);
     }
 
@@ -85,5 +89,26 @@ contract DSCEngineTest is Test {
 
         assertEq(totalDSCMinted, 0);
         assertEq(AMOUNT_COLLATERAL, expectCollateralAmount);
+    }
+
+    function testCalculateHealthFactor() public view {
+        uint256 amountDSC = 2000 ether;
+        uint256 health = 1 ether;
+        // $x * 50 / 100 = $2000 DSC
+        // $x = $2000 DSC / 50 * 100
+        uint256 collateralValueInUSD =
+            amountDSC / dscEngine.getLiquidationThreshold() * dscEngine.getLiquidationPrecision();
+        uint256 goodHealth = dscEngine.calculateHealthFactor(amountDSC, collateralValueInUSD);
+        uint256 badHealth = dscEngine.calculateHealthFactor(amountDSC, collateralValueInUSD - 1);
+
+        assertEq(goodHealth, health);
+        assertLe(badHealth, health);
+    }
+
+    function testRevertIfMintZeroDSC() public {
+        vm.startPrank(user);
+        vm.expectRevert(DSCEngine.DSCEngine__needsMoreThanZero.selector);
+        dscEngine.mintDSC(0);
+        vm.stopPrank();
     }
 }

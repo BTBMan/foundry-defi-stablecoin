@@ -207,6 +207,21 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     // External pure  //////////////////
+    function calculateHealthFactor(uint256 totalDSCMinted, uint256 collateralValueInUSD)
+        external
+        pure
+        returns (uint256)
+    {
+        return _calculateHealthFactor(totalDSCMinted, collateralValueInUSD);
+    }
+
+    function getLiquidationThreshold() external pure returns (uint256) {
+        return LIQUIDATION_THRESHOLD;
+    }
+
+    function getLiquidationPrecision() external pure returns (uint256) {
+        return LIQUIDATION_PRECISION;
+    }
 
     ////////////////////////////////////
     // Public functions               //
@@ -311,16 +326,9 @@ contract DSCEngine is ReentrancyGuard {
         if (totalDSCMinted == 0) return type(uint256).max; // ?
         uint256 collateralAdjustedForThreshold = (collateralValueInUSD * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
 
-        // $1000 ETH -> 100 DSC
-        // (1000 * 50) = (50000 / 100) = (500 / 100) = (5 > 1)
+        // $4000 ETH -> $2000 DSC
+        // $4000 * 50 / 100 = $2000 DSC
+        // $2000 DSC / $2000 DSC = 1 (1 == 1)
         return (collateralAdjustedForThreshold * PRECISION) / totalDSCMinted;
-    }
-
-    function calculateHealthFactor(uint256 totalDSCMinted, uint256 collateralValueInUSD)
-        private
-        pure
-        returns (uint256)
-    {
-        return _calculateHealthFactor(totalDSCMinted, collateralValueInUSD);
     }
 }
