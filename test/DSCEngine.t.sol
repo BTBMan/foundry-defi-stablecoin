@@ -187,10 +187,6 @@ contract DSCEngineTest is Test, IHelperConfig {
         assertEq(userWETHBalance, 0);
     }
 
-    function testRevertIfTransferFromFailed() public {
-        //
-    }
-
     function testCanBurnDSC() public depositedCollateralAndMintDSC {
         vm.startPrank(user);
         decentralizedStablecoin.approve(address(dscEngine), AMOUNT_COLLATERAL);
@@ -242,5 +238,19 @@ contract DSCEngineTest is Test, IHelperConfig {
         assertEq(amountDSCMinted, 0);
         assertEq(userDSCBalance, 0);
         assertEq(userWETHBalance, AMOUNT_COLLATERAL);
+    }
+
+    function testRevertIfLiquidateWithZeroDebt() public depositedCollateralAndMintDSC {
+        vm.expectRevert(DSCEngine.DSCEngine__needsMoreThanZero.selector);
+        dscEngine.liquidate(activeNetworkConfig.weth, user, 0);
+    }
+
+    function testRevertIfLiquidateHealthFactorIsOk() public depositedCollateralAndMintDSC {
+        vm.expectRevert(DSCEngine.DSCEngine__HealthFactorOk.selector);
+        dscEngine.liquidate(activeNetworkConfig.weth, user, 1);
+    }
+
+    function testRevertIfHealthFactorIsNotImproved() public {
+        //
     }
 }
