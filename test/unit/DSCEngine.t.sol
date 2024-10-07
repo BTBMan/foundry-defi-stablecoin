@@ -3,10 +3,10 @@ pragma solidity ^0.8.27;
 
 import {Test, console} from "forge-std/Test.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
-import {DSCEngine} from "../src/DSCEngine.sol";
-import {DecentralizedStablecoin} from "../src/DecentralizedStablecoin.sol";
-import {DSCEngineScript} from "../script/DSCEngine.s.sol";
-import {HelperConfig, IHelperConfig} from "../script/HelperConfig.s.sol";
+import {DSCEngine} from "../../src/DSCEngine.sol";
+import {DecentralizedStablecoin} from "../../src/DecentralizedStablecoin.sol";
+import {DSCEngineScript} from "../../script/DSCEngine.s.sol";
+import {HelperConfig, IHelperConfig} from "../../script/HelperConfig.s.sol";
 
 contract DSCEngineTest is Test, IHelperConfig {
     NetworkConfig public activeNetworkConfig;
@@ -21,7 +21,6 @@ contract DSCEngineTest is Test, IHelperConfig {
     DSCEngine public dscEngine;
     DecentralizedStablecoin public decentralizedStablecoin;
     HelperConfig public helperConfig;
-    DSCEngineScript public dscEngineScript;
 
     address public user = makeAddr("user");
 
@@ -47,8 +46,7 @@ contract DSCEngineTest is Test, IHelperConfig {
     }
 
     function setUp() public {
-        dscEngineScript = new DSCEngineScript();
-        (decentralizedStablecoin, dscEngine, helperConfig) = dscEngineScript.run();
+        (decentralizedStablecoin, dscEngine, helperConfig) = new DSCEngineScript().run();
 
         activeNetworkConfig = helperConfig.getActiveNetworkConfig();
 
