@@ -98,8 +98,8 @@ contract DSCEngineTest is Test, IHelperConfig {
         // $x = $2000 DSC / 50 * 100
         uint256 collateralValueInUSD =
             amountDSC / dscEngine.getLiquidationThreshold() * dscEngine.getLiquidationPrecision();
-        uint256 goodHealth = dscEngine.calculateHealthFactor(amountDSC, collateralValueInUSD);
-        uint256 badHealth = dscEngine.calculateHealthFactor(amountDSC, collateralValueInUSD - 1);
+        uint256 goodHealth = dscEngine.getCalculateHealthFactor(amountDSC, collateralValueInUSD);
+        uint256 badHealth = dscEngine.getCalculateHealthFactor(amountDSC, collateralValueInUSD - 1);
 
         assertEq(goodHealth, health);
         assertLe(badHealth, health);
