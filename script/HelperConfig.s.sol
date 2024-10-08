@@ -36,15 +36,15 @@ contract HelperConfig is Script, IHelperConfig {
         }
 
         vm.startBroadcast();
-        MockV3Aggregator mockWETHUSDPriceFeed = new MockV3Aggregator(DECIMALS, ETC_USD_PRICE);
-        MockV3Aggregator mockWBTCUSDPriceFeed = new MockV3Aggregator(DECIMALS, BTC_USD_PRICE);
+        MockV3Aggregator mockWethUSDPriceFeed = new MockV3Aggregator(DECIMALS, ETC_USD_PRICE);
+        MockV3Aggregator mockWbtcUSDPriceFeed = new MockV3Aggregator(DECIMALS, BTC_USD_PRICE);
         ERC20Mock mockWETH = new ERC20Mock();
         ERC20Mock mockWBTC = new ERC20Mock();
         vm.stopBroadcast();
 
         NetworkConfig memory config = NetworkConfig({
-            wethUSDPriceFeed: address(mockWETHUSDPriceFeed),
-            wbtcUSDPriceFeed: address(mockWBTCUSDPriceFeed),
+            wethUSDPriceFeed: address(mockWethUSDPriceFeed),
+            wbtcUSDPriceFeed: address(mockWbtcUSDPriceFeed),
             weth: address(mockWETH),
             wbtc: address(mockWBTC),
             deployerKey: vm.envUint("PRIVATE_KEY")

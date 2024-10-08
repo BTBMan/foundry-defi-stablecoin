@@ -53,7 +53,7 @@ contract DSCEngineTest is Test, IHelperConfig {
         ERC20Mock(activeNetworkConfig.weth).mint(user, STARTING_ERC20_BALANCE);
     }
 
-    function testRevertsIfTokenLengthDoesntMatchPriceFeed() public {
+    function testRevertsIfTokenLengthDoesNotMatchPriceFeed() public {
         tokenAddresses.push(activeNetworkConfig.weth);
         priceFeedAddresses.push(activeNetworkConfig.wethUSDPriceFeed);
         priceFeedAddresses.push(activeNetworkConfig.wbtcUSDPriceFeed);
@@ -123,9 +123,9 @@ contract DSCEngineTest is Test, IHelperConfig {
 
     function testGetAccountCollateralValue() public depositedCollateral {
         uint256 expectedValue = (AMOUNT_COLLATERAL * 2000 ether) / 1 ether;
-        uint256 collaterValueInUSD = dscEngine.getAccountCollateralValue(user);
+        uint256 collateralValueInUSD = dscEngine.getAccountCollateralValue(user);
 
-        assertEq(expectedValue, collaterValueInUSD);
+        assertEq(expectedValue, collateralValueInUSD);
     }
 
     function testEmitEventWhenDepositCollateral() public {

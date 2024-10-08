@@ -8,6 +8,7 @@ import {DSCEngine} from "../../src/DSCEngine.sol";
 import {DecentralizedStablecoin} from "../../src/DecentralizedStablecoin.sol";
 import {DSCEngineScript} from "../../script/DSCEngine.s.sol";
 import {HelperConfig, IHelperConfig} from "../../script/HelperConfig.s.sol";
+import {HandlerTest} from "./Handler.t.sol";
 
 // Our invariant tests
 // There are two invariant tests of DSCEngine contract we should test, but not all.
@@ -20,12 +21,15 @@ contract InvariantTest is StdInvariant, Test, IHelperConfig {
     DSCEngine public dscEngine;
     DecentralizedStablecoin public decentralizedStablecoin;
     HelperConfig public helperConfig;
+    HandlerTest public handlerTest;
 
     function setUp() public {
         (decentralizedStablecoin, dscEngine, helperConfig) = new DSCEngineScript().run();
         activeNetworkConfig = helperConfig.getActiveNetworkConfig();
 
-        targetContract(address(dscEngine));
+        handlerTest = new HandlerTest(dscEngine, decentralizedStablecoin);
+
+        targetContract(address(handlerTest));
     }
 
     function invariant_DSCMustHaveMoreValueThanTotalSupply() public view {
