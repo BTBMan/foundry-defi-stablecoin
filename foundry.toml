@@ -6,3 +6,8 @@ remappings = [
   "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
   "@chainlink/contracts/=lib/chainlink-brownie-contracts/contracts/src/",
 ]
+
+[invariant]
+runs = 1000
+depth = 128
+fail_on_revert = false
