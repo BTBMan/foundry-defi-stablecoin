@@ -37,12 +37,27 @@ contract HandlerTest is StdInvariant, Test {
         vm.stopPrank();
     }
 
+    function mintDSC(uint256 amountDSC) public {
+        (uint256 totalDSCMinted, uint256 collateralValueInUSD) = dscEngine.getAccountInformation(msg.sender);
+        // Should subtract the DSC we already have
+        int256 maxDSCToMint = (int256(collateralValueInUSD) / 2) - int256(totalDSCMinted);
+        if (maxDSCToMint < 0) return;
+
+        amountDSC = bound(amountDSC, 0, uint256(maxDSCToMint));
+        if (maxDSCToMint == 0) return;
+
+        vm.startPrank(msg.sender);
+        dscEngine.mintDSC(amountDSC);
+        vm.stopPrank();
+    }
+
     function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) public {
         ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
         uint256 maxCollateralToRedeem = dscEngine.getCollateralBalanceOfUser(msg.sender, address(collateral));
         amountCollateral = bound(amountCollateral, 0, maxCollateralToRedeem);
 
         if (amountCollateral == 0) return;
+
         vm.prank(msg.sender);
         dscEngine.redeemCollateral(address(collateral), amountCollateral);
     }
